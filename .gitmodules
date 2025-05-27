@@ -1,0 +1,3 @@
+[submodule "tessdata"]
+	path = tessdata
+	url = https://github.com/L00p1nLup1n/tessdata.git
