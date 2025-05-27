@@ -6,19 +6,41 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
+import org.opencv.core.Rect;
+import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+
+import net.sourceforge.tess4j.ITessAPI;
+import net.sourceforge.tess4j.ITesseract;
+import net.sourceforge.tess4j.Tesseract;
+import nu.pattern.OpenCV;
+
 public class SudokuSolverGUI extends JFrame {
 
     private static final int SIZE = 9;
     private final JTextField[][] cells = new JTextField[SIZE][SIZE];
+    private File lastDirectory = null; // remembers last used folder
 
     public SudokuSolverGUI() {
         setTitle("Sudoku Solver");
@@ -60,6 +82,7 @@ public class SudokuSolverGUI extends JFrame {
         }
 
         // Buttons panel
+
         JPanel buttonsPanel = new JPanel();
 
         JButton solveButton = new JButton("Solve");
@@ -68,6 +91,10 @@ public class SudokuSolverGUI extends JFrame {
         JButton resetButton = new JButton("Reset");
         resetButton.addActionListener(e -> resetBoard());
 
+        JButton loadImageButton = new JButton("Load Sudoku Image");
+        loadImageButton.addActionListener(e -> loadSudokuImage());
+
+        buttonsPanel.add(loadImageButton);
         buttonsPanel.add(solveButton);
         buttonsPanel.add(resetButton);
 
@@ -84,6 +111,191 @@ public class SudokuSolverGUI extends JFrame {
                 cells[row][col].setText("");
             }
         }
+    }
+
+    private void loadSudokuImage() {
+        String projectRoot = System.getProperty("user.dir");
+        File uploadDir = new File(projectRoot, "upload");
+
+        // Create 'upload' folder if missing
+        if (!uploadDir.exists()) {
+            uploadDir.mkdirs();
+        }
+
+        // Choose start directory: last used or uploadDir
+        File startDir = (lastDirectory != null && lastDirectory.exists()) ? lastDirectory : uploadDir;
+
+        JFileChooser chooser = new JFileChooser(startDir);
+        int result = chooser.showOpenDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION)
+            return;
+
+        File imageFile = chooser.getSelectedFile();
+        lastDirectory = imageFile.getParentFile(); // remember folder for next time
+
+        try {
+            // 1) Preprocess the image to find and warp the Sudoku grid
+            Mat warpedGrid = preprocessSudokuImage(imageFile.getAbsolutePath());
+
+            // 2) Split into 81 individual cell images
+            List<Mat> cellImages = splitCells(warpedGrid);
+
+            // 3) Set up Tesseract OCR
+            ITesseract tesseract = new Tesseract();
+            tesseract.setDatapath("tessdata"); // Path to tessdata folder
+            tesseract.setVariable("tessedit_char_whitelist", "123456789");
+
+            // 4) OCR each cell to get digits
+            int[][] board = recognizeDigits(cellImages, tesseract);
+
+            // 5) Fill the GUI grid with recognized digits
+            for (int r = 0; r < SIZE; r++) {
+                for (int c = 0; c < SIZE; c++) {
+                    cells[r][c].setText(board[r][c] == 0 ? "" : String.valueOf(board[r][c]));
+                }
+            }
+            JOptionPane.showMessageDialog(this, "Sudoku board loaded from image! Verify and edit if needed.");
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Failed to process image: " + e.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
+    private Point[] orderPoints(Point[] pts) {
+        Point[] ordered = new Point[4];
+
+        // Sum of x and y will give top-left (smallest sum) and bottom-right (largest
+        // sum)
+        Arrays.sort(pts, Comparator.comparingDouble(p -> p.x + p.y));
+        ordered[0] = pts[0]; // top-left
+        ordered[2] = pts[3]; // bottom-right
+
+        // Difference of y - x will give top-right (smallest diff) and bottom-left
+        // (largest diff)
+        Arrays.sort(pts, Comparator.comparingDouble(p -> p.y - p.x));
+        ordered[1] = pts[0]; // top-right
+        ordered[3] = pts[3]; // bottom-left
+
+        return ordered;
+    }
+
+    public Mat preprocessSudokuImage(String path) {
+        Mat src = Imgcodecs.imread(path);
+        Mat gray = new Mat();
+        Imgproc.cvtColor(src, gray, Imgproc.COLOR_BGR2GRAY);
+
+        // Equalize histogram for contrast improvement
+        Imgproc.equalizeHist(gray, gray);
+
+        // Blur to reduce noise
+        Imgproc.GaussianBlur(gray, gray, new Size(7, 7), 0);
+
+        Mat thresh = new Mat();
+        // Adaptive Gaussian Threshold for better binarization
+        Imgproc.adaptiveThreshold(gray, thresh, 255,
+                Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY_INV, 11, 2);
+
+        // Morphological opening to remove noise
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Imgproc.morphologyEx(thresh, thresh, Imgproc.MORPH_OPEN, kernel);
+
+        // Find contours to detect the Sudoku grid
+        List<MatOfPoint> contours = new ArrayList<>();
+        Mat hierarchy = new Mat();
+        Imgproc.findContours(thresh, contours, hierarchy,
+                Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        double maxArea = 0;
+        MatOfPoint maxContour = null;
+        for (MatOfPoint contour : contours) {
+            double area = Imgproc.contourArea(contour);
+            if (area > maxArea) {
+                MatOfPoint2f approxCurve = new MatOfPoint2f();
+                MatOfPoint2f contour2f = new MatOfPoint2f(contour.toArray());
+                double peri = Imgproc.arcLength(contour2f, true);
+                Imgproc.approxPolyDP(contour2f, approxCurve, 0.02 * peri, true);
+                if (approxCurve.total() == 4) {
+                    maxArea = area;
+                    maxContour = new MatOfPoint(approxCurve.toArray());
+                }
+            }
+        }
+
+        if (maxContour == null)
+            throw new RuntimeException("Could not find Sudoku grid");
+
+        Point[] pts = maxContour.toArray();
+        Point[] orderedPts = orderPoints(pts);
+
+        double side = 450;
+        MatOfPoint2f dest = new MatOfPoint2f(
+                new Point(0, 0),
+                new Point(side - 1, 0),
+                new Point(side - 1, side - 1),
+                new Point(0, side - 1));
+        MatOfPoint2f srcPts = new MatOfPoint2f(orderedPts);
+        Mat warpMat = Imgproc.getPerspectiveTransform(srcPts, dest);
+        Mat warped = new Mat();
+        Imgproc.warpPerspective(gray, warped, warpMat, new Size(side, side));
+        return warped;
+    }
+
+    public List<Mat> splitCells(Mat warped) {
+        int size = warped.rows();
+        int cellSize = size / 9;
+        int margin = cellSize / 10; // Crop margin inside each cell to avoid grid lines
+        List<Mat> cells = new ArrayList<>();
+
+        for (int row = 0; row < 9; row++) {
+            for (int col = 0; col < 9; col++) {
+                int x = col * cellSize + margin;
+                int y = row * cellSize + margin;
+                int width = cellSize - 2 * margin;
+                int height = cellSize - 2 * margin;
+
+                Rect roi = new Rect(x, y, width, height);
+                Mat cell = new Mat(warped, roi);
+
+                // Resize to standard size for OCR
+                Mat resized = new Mat();
+                Imgproc.resize(cell, resized, new Size(28, 28));
+
+                cells.add(resized);
+            }
+        }
+        return cells;
+    }
+
+    public int[][] recognizeDigits(List<Mat> cells, ITesseract tesseract) throws Exception {
+        int[][] board = new int[9][9];
+        tesseract.setTessVariable("tessedit_char_whitelist", "123456789");
+        tesseract.setOcrEngineMode(ITessAPI.TessOcrEngineMode.OEM_LSTM_ONLY);
+        tesseract.setPageSegMode(ITessAPI.TessPageSegMode.PSM_SINGLE_CHAR);
+
+        for (int i = 0; i < cells.size(); i++) {
+            BufferedImage img = matToBufferedImage(cells.get(i));
+            String rawResult = tesseract.doOCR(img).trim();
+
+            // Take only first recognized digit
+            String digitStr = rawResult.replaceAll("[^1-9]", "");
+            int digit = digitStr.isEmpty() ? 0 : Integer.parseInt(digitStr);
+
+            board[i / 9][i % 9] = digit;
+        }
+        return board;
+    }
+
+    private BufferedImage matToBufferedImage(Mat mat) {
+        int type = (mat.channels() > 1) ? BufferedImage.TYPE_3BYTE_BGR : BufferedImage.TYPE_BYTE_GRAY;
+        int bufferSize = mat.channels() * mat.cols() * mat.rows();
+        byte[] b = new byte[bufferSize];
+        mat.get(0, 0, b);
+        BufferedImage image = new BufferedImage(mat.cols(), mat.rows(), type);
+        final byte[] targetPixels = ((java.awt.image.DataBufferByte) image.getRaster().getDataBuffer()).getData();
+        System.arraycopy(b, 0, targetPixels, 0, b.length);
+        return image;
     }
 
     private void solveSudoku() {
@@ -186,6 +398,7 @@ public class SudokuSolverGUI extends JFrame {
     }
 
     public static void main(String[] args) {
+        OpenCV.loadLocally(); // This extracts native libs automatically
         SwingUtilities.invokeLater(SudokuSolverGUI::new);
     }
 }
