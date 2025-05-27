@@ -1,5 +1,3 @@
-Sure! Here's a clear and concise `README.md` for your Sudoku Solver GUI project with manual input and reset feature:
-
 ````markdown
 # Sudoku Solver GUI
 
@@ -57,5 +55,4 @@ Enjoy solving Sudoku puzzles effortlessly!
 
 ```
 
-If you want me to tailor it further with installation instructions or screenshots, just ask!
-```
+
