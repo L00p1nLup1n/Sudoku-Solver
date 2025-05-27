@@ -1,7 +1,6 @@
-````markdown
-# Sudoku Solver GUI
+# Sudoku Solver with GUI
 
-A simple Java Swing application that allows users to manually input Sudoku puzzles, solve them using a backtracking algorithm, and reset the board.
+A simple Java Swing application that allows users to manually input Sudoku puzzles, solve them using a backtracking algorithm
 
 ## Features
 
@@ -24,26 +23,26 @@ A simple Java Swing application that allows users to manually input Sudoku puzzl
 
    ```bash
    mvn clean package
-````
+   ```
 
 3. Run the generated JAR:
 
-   ```bash
+   ```
    java -jar target/sudoku-solver-1.0-SNAPSHOT.jar
    ```
 
 ## Usage
 
-* Enter digits (1 to 9) in the Sudoku grid cells.
-* Click **Solve** to solve the puzzle.
-* Click **Reset** to clear the board and start over.
-* If invalid input is detected, an error message will appear.
-* If no solution exists, a warning will be shown.
+- Enter digits (1 to 9) in the Sudoku grid cells.
+- Click **Solve** to solve the puzzle.
+- Click **Reset** to clear the board and start over.
+- If invalid input is detected, an error message will appear.
+- If no solution exists, a warning will be shown.
 
 ## Project Structure
 
-* `src/main/java/com/example/sudoku/SudokuSolverGUI.java`: Main GUI and solver logic.
-* `pom.xml`: Maven configuration file.
+- `src/main/java/com/example/sudoku/SudokuSolverGUI.java`: Main GUI and solver logic.
+- `pom.xml`: Maven configuration file.
 
 ## License
 
@@ -52,7 +51,3 @@ This project is open source and free to use.
 ---
 
 Enjoy solving Sudoku puzzles effortlessly!
-
-```
-
-
