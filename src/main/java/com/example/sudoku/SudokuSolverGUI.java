@@ -45,6 +45,7 @@ public class SudokuSolverGUI extends JFrame {
 
                 // Allow only digits 1-9 or empty
                 cell.addKeyListener(new KeyAdapter() {
+                    @Override
                     public void keyTyped(KeyEvent e) {
                         char c = e.getKeyChar();
                         if (!(c >= '1' && c <= '9') && c != '\b') {
@@ -97,7 +98,8 @@ public class SudokuSolverGUI extends JFrame {
                 } else {
                     try {
                         int val = Integer.parseInt(text);
-                        if (val < 1 || val > 9) throw new NumberFormatException();
+                        if (val < 1 || val > 9)
+                            throw new NumberFormatException();
                         board[row][col] = val;
                     } catch (NumberFormatException ex) {
                         JOptionPane.showMessageDialog(this,
@@ -131,7 +133,8 @@ public class SudokuSolverGUI extends JFrame {
                     for (int num = 1; num <= SIZE; num++) {
                         if (isValid(board, row, col, num)) {
                             board[row][col] = num;
-                            if (solve(board)) return true;
+                            if (solve(board))
+                                return true;
                             board[row][col] = 0;
                         }
                     }
@@ -144,16 +147,19 @@ public class SudokuSolverGUI extends JFrame {
 
     private boolean isValid(int[][] board, int row, int col, int num) {
         for (int c = 0; c < SIZE; c++) {
-            if (board[row][c] == num) return false;
+            if (board[row][c] == num)
+                return false;
         }
         for (int r = 0; r < SIZE; r++) {
-            if (board[r][col] == num) return false;
+            if (board[r][col] == num)
+                return false;
         }
         int boxRowStart = row - row % 3;
         int boxColStart = col - col % 3;
         for (int r = boxRowStart; r < boxRowStart + 3; r++) {
             for (int c = boxColStart; c < boxColStart + 3; c++) {
-                if (board[r][c] == num) return false;
+                if (board[r][c] == num)
+                    return false;
             }
         }
         return true;
@@ -161,14 +167,18 @@ public class SudokuSolverGUI extends JFrame {
 
     // Limit input length for text fields
     private static class JTextFieldLimit extends javax.swing.text.PlainDocument {
-        private int limit;
+        private final int limit;
+
         JTextFieldLimit(int limit) {
             super();
             this.limit = limit;
         }
+
         @Override
-        public void insertString(int offset, String str, javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException {
-            if (str == null) return;
+        public void insertString(int offset, String str, javax.swing.text.AttributeSet attr)
+                throws javax.swing.text.BadLocationException {
+            if (str == null)
+                return;
             if ((getLength() + str.length()) <= limit) {
                 super.insertString(offset, str, attr);
             }
