@@ -58,7 +58,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.example.sudoku.SudokuSolverGUI</mainClass>
+                            <mainClass>com.example.sudoku.app.SudokuSolverGUI</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -77,7 +77,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.example.sudoku.SudokuSolverGUI</mainClass>
+                                    <mainClass>com.example.sudoku.app.SudokuSolverGUI</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
