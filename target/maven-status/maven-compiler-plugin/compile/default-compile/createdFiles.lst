@@ -1,3 +1,8 @@
-com\example\sudoku\SudokuSolverGUI$1.class
-com\example\sudoku\SudokuSolverGUI.class
-com\example\sudoku\SudokuSolverGUI$JTextFieldLimit.class
+com\example\sudoku\ocr\OCRProcessor.class
+com\example\sudoku\solver\SudokuSolver.class
+com\example\sudoku\util\JTextFieldLimit.class
+com\example\sudoku\image\CellSplitter.class
+com\example\sudoku\ocr\ImageConverter.class
+com\example\sudoku\app\SudokuSolverGUI$1.class
+com\example\sudoku\app\SudokuSolverGUI.class
+com\example\sudoku\image\ImagePreprocessor.class

@@ -1,1 +1,7 @@
-D:\SudokuSolver\sudoku\src\main\java\com\example\sudoku\SudokuSolverGUI.java
+D:\SudokuSolver\sudoku\src\main\java\com\example\sudoku\ocr\ImageConverter.java
+D:\SudokuSolver\sudoku\src\main\java\com\example\sudoku\image\ImagePreprocessor.java
+D:\SudokuSolver\sudoku\src\main\java\com\example\sudoku\ocr\OCRProcessor.java
+D:\SudokuSolver\sudoku\src\main\java\com\example\sudoku\app\SudokuSolverGUI.java
+D:\SudokuSolver\sudoku\src\main\java\com\example\sudoku\util\JTextFieldLimit.java
+D:\SudokuSolver\sudoku\src\main\java\com\example\sudoku\solver\SudokuSolver.java
+D:\SudokuSolver\sudoku\src\main\java\com\example\sudoku\image\CellSplitter.java
