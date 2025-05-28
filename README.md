@@ -20,7 +20,7 @@ A Java application that solves Sudoku puzzles by manual input or by loading an i
 ### 1. Clone the repository with submodules
 
 ```bash
-git clone https://github.com/L00p1nLup1n/Sudoku-Solver.git
+git clone --recurse-submodules https://github.com/L00p1nLup1n/Sudoku-Solver.git
 ````
 
 If you already cloned without submodules:
