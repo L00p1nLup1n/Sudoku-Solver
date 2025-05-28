@@ -4,15 +4,20 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -23,6 +28,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
@@ -94,6 +100,10 @@ public class SudokuSolverGUI extends JFrame {
         JButton loadImageButton = new JButton("Load Sudoku Image");
         loadImageButton.addActionListener(e -> loadSudokuImage());
 
+        JButton pasteImageButton = new JButton("Paste Sudoku Image");
+        pasteImageButton.addActionListener(e -> pasteSudokuImage());
+
+        buttonsPanel.add(pasteImageButton);
         buttonsPanel.add(loadImageButton);
         buttonsPanel.add(solveButton);
         buttonsPanel.add(resetButton);
@@ -110,6 +120,44 @@ public class SudokuSolverGUI extends JFrame {
             for (int col = 0; col < SIZE; col++) {
                 cells[row][col].setText("");
             }
+        }
+    }
+
+    private void pasteSudokuImage() {
+        try {
+            var clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            if (!clipboard.isDataFlavorAvailable(DataFlavor.imageFlavor)) {
+                JOptionPane.showMessageDialog(this, "Clipboard does not contain an image", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            BufferedImage bi = (BufferedImage) clipboard.getData(DataFlavor.imageFlavor);
+
+            // 1) Convert to Mat
+            Mat src = bufferedImageToMat(bi);
+
+            // 2) Warp grid
+            Mat warpedGrid = preprocessSudokuImage(src);
+
+            // 3) Split & OCR (reuse your existing code)
+            List<Mat> cellImages = splitCells(warpedGrid);
+            ITesseract tesseract = new Tesseract();
+            tesseract.setDatapath("tessdata");
+            tesseract.setVariable("tessedit_char_whitelist", "123456789");
+            int[][] board = recognizeDigits(cellImages, tesseract);
+
+            // 4) Fill GUI
+            for (int r = 0; r < SIZE; r++) {
+                for (int c = 0; c < SIZE; c++) {
+                    cells[r][c].setText(board[r][c] == 0 ? "" : String.valueOf(board[r][c]));
+                }
+            }
+            JOptionPane.showMessageDialog(this, "Pasted image processed. Verify before solving.");
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to paste/process image:\n" + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
         }
     }
 
@@ -183,6 +231,10 @@ public class SudokuSolverGUI extends JFrame {
 
     public Mat preprocessSudokuImage(String path) {
         Mat src = Imgcodecs.imread(path);
+        return preprocessSudokuImage(src);
+    }
+
+    public Mat preprocessSudokuImage(Mat src) {
         Mat gray = new Mat();
         Imgproc.cvtColor(src, gray, Imgproc.COLOR_BGR2GRAY);
 
@@ -266,6 +318,35 @@ public class SudokuSolverGUI extends JFrame {
             }
         }
         return cells;
+    }
+
+    // private Mat bufferedImageToMat(BufferedImage bi) {
+    // int width = bi.getWidth(), height = bi.getHeight();
+    // Mat mat = new Mat(height, width, bi.getType() == BufferedImage.TYPE_BYTE_GRAY
+    // ? CvType.CV_8UC1
+    // : CvType.CV_8UC3);
+    // byte[] pixels = ((DataBufferByte) bi.getRaster().getDataBuffer()).getData();
+    // mat.put(0, 0, pixels);
+    // if (bi.getType() != BufferedImage.TYPE_BYTE_GRAY) {
+    // // Convert BGR to RGB if needed
+    // Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2RGB);
+    // }
+    // return mat;
+    // }
+
+    /**
+     * Converts any BufferedImage (including ARGB from clipboard) into
+     * a 3-channel BGR OpenCV Mat by round-tripping through PNG.
+     */
+    private Mat bufferedImageToMat(BufferedImage src) throws IOException {
+        // 1) encode to PNG in memory
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(src, "png", baos);
+        byte[] pngBytes = baos.toByteArray();
+
+        // 2) decode back into a Mat (color)
+        MatOfByte mob = new MatOfByte(pngBytes);
+        return Imgcodecs.imdecode(mob, Imgcodecs.IMREAD_COLOR);
     }
 
     public int[][] recognizeDigits(List<Mat> cells, ITesseract tesseract) throws Exception {
