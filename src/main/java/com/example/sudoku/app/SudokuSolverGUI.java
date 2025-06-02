@@ -45,6 +45,7 @@ public class SudokuSolverGUI extends JFrame {
     private final OCRProcessor ocrProcessor = new OCRProcessor();
     private final ImagePreprocessor imagePreprocessor = new ImagePreprocessor();
     private final CellSplitter cellSplitter = new CellSplitter();
+    // private JButton stepSolveButton;
 
     public SudokuSolverGUI() {
         setTitle("Sudoku Solver");
@@ -97,6 +98,10 @@ public class SudokuSolverGUI extends JFrame {
         JButton resetButton = new JButton("Reset");
         resetButton.addActionListener(e -> resetBoard());
 
+        // stepSolveButton = new JButton("Step Solve");
+        // stepSolveButton.addActionListener(e -> stepSolvePuzzle());
+
+        // buttonsPanel.add(stepSolveButton);
         buttonsPanel.add(pasteImageButton);
         buttonsPanel.add(loadImageButton);
         buttonsPanel.add(solveButton);
@@ -194,7 +199,8 @@ public class SudokuSolverGUI extends JFrame {
             }
         }
         if (!solver.isBoardValid(board)) {
-            JOptionPane.showMessageDialog(this, "Invalid board: conflicts detected in input.", "Input Error",
+            JOptionPane.showMessageDialog(this, "Invalid board: conflicts detected or not enough clues in input.",
+                    "Input Error",
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -205,6 +211,64 @@ public class SudokuSolverGUI extends JFrame {
                     JOptionPane.WARNING_MESSAGE);
         }
     }
+
+
+    // Upcoming feature: Step solving
+
+    // private void stepSolvePuzzle() {
+    // int[][] board = new int[SIZE][SIZE];
+
+    // for (int r = 0; r < SIZE; r++) {
+    // for (int c = 0; c < SIZE; c++) {
+    // String text = cells[r][c].getText();
+    // try {
+    // board[r][c] = text.isEmpty() ? 0 : Integer.parseInt(text);
+    // } catch (NumberFormatException ex) {
+    // JOptionPane.showMessageDialog(this, "Invalid input detected. Fix before step
+    // solving.",
+    // "Input Error", JOptionPane.ERROR_MESSAGE);
+    // return;
+    // }
+    // }
+    // }
+
+    // if (!solver.isBoardValid(board)) {
+    // JOptionPane.showMessageDialog(this, "Input board has conflicts. Fix before
+    // step solving.",
+    // "Input Error", JOptionPane.ERROR_MESSAGE);
+    // return;
+    // }
+
+    // stepSolveButton.setEnabled(false); // disable button while running
+
+    // new SwingWorker<Void, int[]>() {
+    // @Override
+    // protected Void doInBackground() throws Exception {
+    // solver.solveStepwise(board, (row, col, num) -> {
+    // publish(new int[] { row, col, num });
+    // try {
+    // Thread.sleep(100); // set pause between steps
+    // } catch (InterruptedException ignored) {
+    // }
+    // });
+    // return null;
+    // }
+
+    // @Override
+    // protected void process(java.util.List<int[]> chunks) {
+    // int[] last = chunks.get(chunks.size() - 1);
+    // int r = last[0], c = last[1], val = last[2];
+    // cells[r][c].setText(val == 0 ? "" : String.valueOf(val));
+    // }
+
+    // @Override
+    // protected void done() {
+    // stepSolveButton.setEnabled(true);
+    // JOptionPane.showMessageDialog(SudokuSolverGUI.this, "Step solving
+    // complete.");
+    // }
+    // }.execute();
+    // }
 
     private void resetBoard() {
         for (int r = 0; r < SIZE; r++) {

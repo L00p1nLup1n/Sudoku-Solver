@@ -1,17 +1,20 @@
 package com.example.sudoku.ocr;
 
-import net.sourceforge.tess4j.ITessAPI;
-import net.sourceforge.tess4j.ITesseract;
-import org.opencv.core.Mat;
-
 import java.awt.image.BufferedImage;
 import java.util.List;
+
+import org.opencv.core.Mat;
+
+import net.sourceforge.tess4j.ITessAPI;
+import net.sourceforge.tess4j.ITesseract;
 
 public class OCRProcessor {
 
     public int[][] recognizeDigits(List<Mat> cellImages, ITesseract tesseract) throws Exception {
         int[][] board = new int[9][9];
-        tesseract.setTessVariable("tessedit_char_whitelist", "123456789");
+        
+        tesseract.setDatapath("tessdata");
+        tesseract.setVariable("tessedit_char_whitelist", "123456789");
         tesseract.setOcrEngineMode(ITessAPI.TessOcrEngineMode.OEM_LSTM_ONLY);
         tesseract.setPageSegMode(ITessAPI.TessPageSegMode.PSM_SINGLE_CHAR);
 
