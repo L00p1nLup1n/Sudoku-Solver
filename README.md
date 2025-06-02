@@ -54,7 +54,7 @@ java -jar target/sudoku-solver-1.0-SNAPSHOT.jar
 ## Usage
 
 * **Manual Input:** Type digits (1-9) into the grid.
-* **Load Image:** Import a Sudoku photo to auto-fill the grid.
+* **Load Image:** Import a Sudoku photo for paste one from clipboard to auto-fill the grid.
 * **Solve:** Click to solve the puzzle.
 * **Reset:** Clear the grid.
 
