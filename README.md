@@ -1,5 +1,5 @@
 
-# Sudoku Solver GUI
+# Sudoku Solver 
 
 A Java application that solves Sudoku puzzles by manual input or by loading an image of a Sudoku board. It uses OpenCV for image processing and Tesseract OCR (via Tess4J) for digit recognition.
 
