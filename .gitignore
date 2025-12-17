@@ -52,3 +52,8 @@ venv.bak/
 
 # pip
 pip-wheel-metadata/
+pyrightconfig.json
+
+# Output folder (keep folder, ignore contents)
+output/*
+!output/.gitkeep
